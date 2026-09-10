@@ -3,9 +3,9 @@ ESAIC 2025 Congress Abstract Extractor
 --------------------------------------
 Extracts scientific conference presentation metadata and abstracts from the 
 European Society of Anaesthesiology and Intensive Care (ESAIC) 2025 Abstract Book
-and structures them into the Monocl Excel data schema.
+and structures them into the target Excel data schema.
 
-Monocl Target Schema:
+Target Schema:
   1. Name (incl. titles)
   2. Affiliation/Organisation and location (multiple joined with ' ___ ')
   3. Role ('Poster presenter' for underlined author, 'Abstract author' for co-authors)
@@ -27,11 +27,11 @@ from tqdm import tqdm
 import pymupdf
 import openpyxl
 
-logger = logging.getLogger("monocl_extractor")
+logger = logging.getLogger("abstract_extractor")
 
 DEFAULT_ABSTRACT_URL = "https://esaic.org/wp-content/uploads/2025/07/ESAIC2025_Abstracts-1.pdf"
 
-# Monocl Target Excel Schema Headers
+# Target Excel Schema Headers
 EXCEL_HEADERS = [
     'Name (incl. titles)',
     'Affiliation/Organisation and location',
@@ -458,7 +458,7 @@ def print_ingestion_summary(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract ESAIC 2025 congress abstracts into Monocl Excel schema.")
+    parser = argparse.ArgumentParser(description="Extract ESAIC 2025 congress abstracts into target Excel schema.")
     parser.add_argument("--pdf", default="ESAIC2025_Abstracts-1.pdf", help="Path to ESAIC PDF")
     parser.add_argument("--template", default="Output_example.xlsx", help="Path to reference Excel template")
     parser.add_argument("--output", default="Output_completed.xlsx", help="Output Excel file path")
