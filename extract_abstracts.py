@@ -468,11 +468,6 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Enable verbose debug logging")
     args = parser.parse_args()
 
-    # Fail fast: validate template upfront if user explicitly asked to keep it
-    if args.keep_existing and not os.path.exists(args.template):
-        logger.error(f"Template file '{args.template}' not found. Cannot keep existing rows.")
-        sys.exit(1)
-
     # Configure logging
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(
@@ -481,10 +476,23 @@ def main():
         datefmt="%H:%M:%S"
     )
 
+    # Fail fast: validate input files upfront
+    if not os.path.exists(args.pdf):
+        logger.error(f"Source PDF file '{args.pdf}' not found. Please verify the path.")
+        sys.exit(1)
+
+    if args.keep_existing and not os.path.exists(args.template):
+        logger.error(f"Template file '{args.template}' not found. Cannot keep existing rows.")
+        sys.exit(1)
+
     start_time = time.time()
 
     logger.info(f"Opening PDF: {args.pdf}")
-    doc = pymupdf.open(args.pdf)
+    try:
+        doc = pymupdf.open(args.pdf)
+    except Exception as e:
+        logger.error(f"Failed to open PDF '{args.pdf}': {e}")
+        sys.exit(1)
     logger.info(f"Extracting presentation flow for pages {args.start_page} through {args.end_page}...")
 
     presentations, last_page, stop_reason = extract_presentation_flow(doc, args.start_page, args.end_page)

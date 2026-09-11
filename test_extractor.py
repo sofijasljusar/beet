@@ -194,3 +194,36 @@ def test_back_matter_pattern_matches_indexes(header):
 def test_back_matter_pattern_ignores_regular_text(body_line):
     """Does not trigger on regular abstract body text."""
     assert BACK_MATTER_PATTERN.search(body_line) is None
+
+
+# =====================================================================
+# 5. CLI & Input Validation Tests
+# =====================================================================
+
+def test_main_exits_when_pdf_missing(monkeypatch, caplog):
+    """When the PDF file is absent, main() logs an error and exits cleanly with code 1."""
+    import logging
+    from extract_abstracts import main
+
+    monkeypatch.setattr("sys.argv", ["extract_abstracts.py", "--pdf", "non_existent_file.pdf"])
+    with caplog.at_level(logging.ERROR, logger="abstract_extractor"):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+    assert exc_info.value.code == 1
+    assert "Source PDF file 'non_existent_file.pdf' not found" in caplog.text
+
+
+def test_main_exits_when_template_missing(monkeypatch, caplog):
+    """When --keep-existing is specified but template is missing, main() logs an error and exits."""
+    import logging
+    from extract_abstracts import main
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["extract_abstracts.py", "--pdf", "ESAIC2025_Abstracts-1.pdf", "--keep-existing", "--template", "non_existent_template.xlsx"]
+    )
+    with caplog.at_level(logging.ERROR, logger="abstract_extractor"):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+    assert exc_info.value.code == 1
+    assert "Template file 'non_existent_template.xlsx' not found" in caplog.text
