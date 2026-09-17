@@ -21,6 +21,7 @@ from extract_abstracts import (
     STANDALONE_FIG_PATTERN,
     BACK_MATTER_PATTERN,
     extract_presentation_flow,
+    export_to_excel,
 )
 
 
@@ -253,4 +254,49 @@ def test_extract_presentation_flow_stops_on_back_matter():
     assert stop_reason is not None
     assert "Author Index" in stop_reason
     assert last_page == 777
+
+
+# =====================================================================
+# 7. Excel Serialization & Illegal Character Sanitization Tests
+# =====================================================================
+
+def test_clean_text_strips_illegal_control_characters():
+    """Strips XML 1.0 illegal control characters like \\x03, \\x0b, \\x0c while keeping regular text."""
+    dirty_text = "PTSD survey: \x0325.9% of respondents\x0b had symptoms.\x0c"
+    cleaned = clean_text(dirty_text)
+    assert cleaned == "PTSD survey: 25.9% of respondents had symptoms."
+    assert "\x03" not in cleaned
+    assert "\x0b" not in cleaned
+    assert "\x0c" not in cleaned
+
+
+def test_export_to_excel_handles_illegal_characters(tmp_path):
+    """Ensures export_to_excel does not raise IllegalCharacterError when cells contain control characters."""
+    output_excel = str(tmp_path / "test_sanitized_output.xlsx")
+    problematic_rows = [
+        [
+            "Dr. Author\x03",
+            "Clinic \x0bHospital",
+            "Abstract author",
+            "Trauma Care",
+            "50AP01-1",
+            "Title with \x0cformfeed",
+            "Abstract with \x03control byte and \x1funit separator",
+            "https://example.com"
+        ]
+    ]
+
+    # Must succeed without raising openpyxl.utils.exceptions.IllegalCharacterError
+    export_to_excel(problematic_rows, output_excel)
+
+    # Verify workbook is readable and characters were sanitized
+    import openpyxl
+    wb = openpyxl.load_workbook(output_excel)
+    ws = wb.active
+    read_back = [cell.value for cell in ws[2]]
+    assert read_back[0] == "Dr. Author"
+    assert read_back[1] == "Clinic Hospital"
+    assert "\x03" not in read_back[6]
+    assert "\x1f" not in read_back[6]
+
 

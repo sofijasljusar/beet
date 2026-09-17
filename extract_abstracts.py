@@ -26,6 +26,7 @@ from typing import List, Dict, Any, Tuple, Optional
 from tqdm import tqdm
 import pymupdf
 import openpyxl
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 
 logger = logging.getLogger("abstract_extractor")
 
@@ -70,6 +71,7 @@ def clean_title(text: str) -> str:
     """Normalize presentation title or session heading into a clean single-line string."""
     if not text:
         return ""
+    text = ILLEGAL_CHARACTERS_RE.sub("", text)
     text = dehyphenate(text)
     # Collapse all whitespace and newlines to a single space
     text = re.sub(r'\s+', ' ', text)
@@ -80,6 +82,7 @@ def clean_text(text: str) -> str:
     """Fix hyphenated line breaks in body text while preserving paragraph structure."""
     if not text:
         return ""
+    text = ILLEGAL_CHARACTERS_RE.sub("", text)
     return dehyphenate(text).strip()
 
 
@@ -415,7 +418,8 @@ def export_to_excel(rows: List[List[str]], output_path: str, template_path: str 
         ws.append(EXCEL_HEADERS)
 
     for row in rows:
-        ws.append(row)
+        clean_row = [ILLEGAL_CHARACTERS_RE.sub("", str(val)) if val is not None else "" for val in row]
+        ws.append(clean_row)
 
     wb.save(output_path)
     logger.info(f"[OK] Successfully wrote {len(rows)} author rows to {output_path}")
