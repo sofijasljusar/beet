@@ -262,9 +262,9 @@ def extract_presentation_flow(doc: pymupdf.Document, start_page: int, end_page: 
             if STANDALONE_FIG_PATTERN.match(block_raw_text):
                 continue
 
-            # Stop extraction if an index section heading block is encountered
+            # Stop extraction if an index section heading block is encountered (back-matter only)
             m_bm = BACK_MATTER_PATTERN.match(block_raw_text)
-            if m_bm:
+            if m_bm and pno >= 8:
                 section_name = m_bm.group(0).title()
                 stop_reason = f"stopped at {section_name} on p. {pno + 1}"
                 logger.info(f"Reached back-matter index header '{block_raw_text}' on page {pno + 1}. Stopping presentation extraction.")

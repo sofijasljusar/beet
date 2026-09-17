@@ -20,6 +20,7 @@ from extract_abstracts import (
     PRESENTATION_ID_PATTERN,
     STANDALONE_FIG_PATTERN,
     BACK_MATTER_PATTERN,
+    extract_presentation_flow,
 )
 
 
@@ -227,3 +228,29 @@ def test_main_exits_when_template_missing(monkeypatch, caplog):
             main()
     assert exc_info.value.code == 1
     assert "Template file 'non_existent_template.xlsx' not found" in caplog.text
+
+
+# =====================================================================
+# 6. Page Navigation & Back-Matter Detection Tests
+# =====================================================================
+
+def test_extract_presentation_flow_ignores_page_8_toc():
+    """Ensures extraction starting from page 1 does not prematurely stop on page 8 Table of Contents."""
+    doc = pymupdf.open("ESAIC2025_Abstracts-1.pdf")
+    presentations, last_page, stop_reason = extract_presentation_flow(doc, start_page=1, end_page=10)
+    assert stop_reason is None
+    assert last_page == 10
+    # Must reach page 9 and successfully extract BAPC presentations
+    pres_ids = [p["id"] for p in presentations]
+    assert "BAPC-01" in pres_ids
+    assert "BAPC-02" in pres_ids
+
+
+def test_extract_presentation_flow_stops_on_back_matter():
+    """Ensures extraction properly stops when encountering the actual Author Index in back matter (p. 777+)."""
+    doc = pymupdf.open("ESAIC2025_Abstracts-1.pdf")
+    _, last_page, stop_reason = extract_presentation_flow(doc, start_page=775, end_page=780)
+    assert stop_reason is not None
+    assert "Author Index" in stop_reason
+    assert last_page == 777
+
